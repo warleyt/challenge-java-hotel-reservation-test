@@ -17,4 +17,25 @@ public class FailingTest {
         HotelReservation Hotel = new HotelReservation();
         assertEquals("Ridgewood", Hotel.getCheapestHotel("Rewards: 26Mar2009(thur), 27Mar2009(fri), 28Mar2009(sat)"));
     }
+    @Test(expected = NullPointerException.class)
+    public void test4(){
+        HotelReservation Hotel = new HotelReservation();
+        Hotel.getCheapestHotel("");
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void test5(){
+        HotelReservation Hotel = new HotelReservation();
+        Hotel.getCheapestHotel("Rews: 26Mar2009(thur), 27Mar2009(fri), 28Mar2009(sat)");
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void test6(){
+        HotelReservation Hotel = new HotelReservation();
+        Hotel.getCheapestHotel("Rews: 26Mar2ur), 27Mar2009(fri), 28Mar2009(sat)");
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void test7(){
+        HotelReservation Hotel = new HotelReservation();
+        Hotel.getCheapestHotel("Rews: 26Mar2009(thur), 27Mar29(fri)8Mar09(sat)");
+    }
+
 }
