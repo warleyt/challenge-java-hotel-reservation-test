@@ -1,75 +1,114 @@
+import java.lang.NullPointerException;
+import java.lang.IllegalArgumentException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
+
 public class HotelReservation {
+
+    private GuestType guestType = GuestType.REWARDS;
+    private int counterWeekdays = 0;
+    private int counterWeekendDays = 0;
+    private final ArrayList<Hotel> hotels = new ArrayList<>();
+
     public String getCheapestHotel(String input) {
 
-        float[][][] matriz = new float[3][2][2];
+        validateInput(input);
 
-        /* dim 1 = 3 hoteis (com respectivas classificações, que são "posição+3")
-                0 - Lakewood; 1 = Bridgewood; 2 = Ridgewood;
-        *  dim 2 = dia de semana (0) ou fds (1)
-        *  dim 3 = cliente normal (0) ou fidelizados (1)
-        * */
-        matriz[0][0][0] = 110;
-        matriz[0][0][1] = 80;
-        matriz[0][1][0] = 90;
-        matriz[0][1][1] = 80;
+        hotels.add(new Hotel("Lakewood", 3, 110, 80, 90, 80));
+        hotels.add(new Hotel("Bridgewood", 4, 160, 110, 60, 50));
+        hotels.add(new Hotel("Ridgewood", 5, 220, 100, 150, 40));
 
-        matriz[1][0][0] = 160;
-        matriz[1][0][1] = 110;
-        matriz[1][1][0] = 60;
-        matriz[1][1][1] = 50;
+        return selectCheapestHotel();
+    }
 
-        matriz[2][0][0] = 220;
-        matriz[2][0][1] = 100;
-        matriz[2][1][0] = 150;
-        matriz[2][1][1] = 40;
 
-        String[] strings = input.split(":");
-        int numDiaSemana = 0;
-        int numFDS = 0;
+    private String selectCheapestHotel() {
 
-        String[] dias = strings[1].split("[(]");
+        int positionOfCheapestHotel = 0;
+        float priceOfCheapestHotel = hotels.get(0).getPriceWeekdays(guestType) * counterWeekdays +
+                hotels.get(0).getPriceWeekend(guestType) * counterWeekendDays;
 
-        for (int i = 1; i < dias.length; i++) {
-            switch (dias[i].substring(0,2)){
+        for (int i = 1; i < hotels.size(); i++) {
+            float priceOfCandidateHotel = hotels.get(i).getPriceWeekdays(guestType) * counterWeekdays +
+                    hotels.get(i).getPriceWeekend(guestType) * counterWeekendDays;
+            if (priceOfCheapestHotel > priceOfCandidateHotel) {
+                priceOfCheapestHotel = priceOfCandidateHotel;
+                positionOfCheapestHotel = i;
+            } else if (priceOfCheapestHotel == priceOfCandidateHotel) {
+                if(hotels.get(i).getRate()>hotels.get(positionOfCheapestHotel).getRate()){
+                    priceOfCheapestHotel = priceOfCandidateHotel;
+                    positionOfCheapestHotel = i;
+                }
+            }
+        }
+
+        return hotels.get(positionOfCheapestHotel).getName();
+    }
+
+    private void validateInput(String input) {
+        if (input.trim().equals("")) {
+            throw new NullPointerException();
+        }
+
+        validateInputSyntax(input);
+    }
+
+
+    private void validateInputSyntax(String input) {
+        if (input.charAt(7) == ':') {
+            String[] guestTypeAndDates = input.split(":", 2);
+            validateGuestType(guestTypeAndDates[0]);
+            validateDates(guestTypeAndDates[1]);
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    private void validateDates(String datesString) {
+
+        SimpleDateFormat dateFormat3LettersDayOfWeek = new SimpleDateFormat(" ddMMMyyyy(EEE)", Locale.US);
+
+        String[] dates = datesString.split(",");
+
+        for (int i = 0; i < dates.length; i++) {
+
+            if(dates[i].substring(11,15).equalsIgnoreCase("tues") ||
+               dates[i].substring(11,15).equalsIgnoreCase("thur")){
+                dates[i]=dates[i].substring(0,14)+dates[i].charAt(dates[i].length()-1);
+            }
+
+            try {
+                dateFormat3LettersDayOfWeek.parse(dates[i]);
+            } catch (ParseException parseException3) {
+                throw new IllegalArgumentException("Invalid date in position " + i + "");
+            }
+
+            switch (dates[i].substring(11,13)) {
                 case "mo":
                 case "tu":
                 case "we":
                 case "th":
                 case "fr":
-                    numDiaSemana++;
+                    counterWeekdays++;
                     break;
                 case "sa":
                 case "su":
-                    numFDS++;
+                    counterWeekendDays++;
                     break;
-                default:
-                    throw new IllegalArgumentException("Invalid day of the week: " + dias[i].substring(0,2));
             }
         }
+    }
 
-        int posHotelBarato = 0;
-        int tipoCliente = 0;
-
-        if(strings[0].charAt(2)=='w'){
-            tipoCliente=1;
-        }
-
-        float somaMenorPreco = matriz[0][0][tipoCliente]*numDiaSemana+matriz[0][1][tipoCliente]*numFDS;
-
-        for (int i = 1; i <= 2; i++) {
-            if(matriz[i][0][tipoCliente]*numDiaSemana+matriz[i][1][tipoCliente]*numFDS
-                    <= somaMenorPreco){
-                somaMenorPreco=matriz[i][0][tipoCliente]*numDiaSemana+matriz[i][1][tipoCliente]*numFDS;
-                posHotelBarato = i;
-            }
-        }
-
-        if(posHotelBarato==0){
-            return "Lakewood";
-        }else if(posHotelBarato==1){
-            return "Bridgewood";
-        }else{
-            return "Ridgewood";
+    private void validateGuestType(String input) {
+        if (input.equalsIgnoreCase(GuestType.REGULAR.toString())) {
+            guestType = GuestType.REGULAR;
+        } else if (input.equalsIgnoreCase(GuestType.REWARDS.toString())) {
+            guestType = GuestType.REWARDS;
+        } else {
+            throw new java.lang.IllegalArgumentException("Argument before colon (:) is not a Guest Type");
         }
     }
 }
